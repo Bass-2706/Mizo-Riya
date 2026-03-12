@@ -17,9 +17,10 @@
     <button class="search-icon-btn" id="searchToggle">&#128269;</button>
   </div>
 
-  <!-- SEARCH BAR (hidden by default) -->
+  <!-- SEARCH BAR + SUGGESTIONS -->
   <div class="search-bar-wrapper" id="searchWrapper">
-    <input type="text" id="searchInput" placeholder="Search sentences..." />
+    <input type="text" id="searchInput" placeholder="Search sentences..." autocomplete="off" />
+    <div class="suggestions-dropdown" id="suggestionsBox"></div>
   </div>
 
   <div class="container">
