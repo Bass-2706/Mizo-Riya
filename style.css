@@ -1,7 +1,9 @@
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background-image: url("bg1.jpg");
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)), 
+    url("bg1.jpg");
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
@@ -17,6 +19,10 @@ body {
   padding: 24px;
 }
 
+h1, h2, .subtitle {
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.75);
+}
+
 h1, h2 {
   margin-top: 0;
 }
@@ -27,8 +33,8 @@ h1, h2 {
 }
 
 .card {
-  background: rgba(17, 24, 39, 0.82);
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(17, 24, 39, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 20px;
@@ -102,3 +108,23 @@ button.secondary {
   color: #93c5fd;
   font-size: 14px;
 }
+
+h1 {
+  color: #ff4fa3;
+}
+
+.subtitle {
+  color: #ffffff;
+}
+
+#loginBtn,
+#signupBtn {
+  background: #22c55e;
+  color: #04130d;
+}
+
+#loginBtn:hover,
+#signupBtn:hover {
+  background: #16a34a;
+}
+
