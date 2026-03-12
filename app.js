@@ -22,6 +22,24 @@ const sentenceList = document.getElementById("sentenceList");
 
 let allSentences = [];
 
+function updateAuthUI(session) {
+  const loggedIn = !!session;
+
+  signupBtn.style.display = loggedIn ? "none" : "inline-block";
+  loginBtn.style.display = loggedIn ? "none" : "inline-block";
+  logoutBtn.style.display = loggedIn ? "inline-block" : "none";
+
+  emailInput.style.display = loggedIn ? "none" : "block";
+  passwordInput.style.display = loggedIn ? "none" : "block";
+
+  if (loggedIn) {
+    authMessage.textContent = "Logged in as " + (session.user.email || "");
+  } else {
+    authMessage.textContent = "Logged out.";
+  }
+}
+
+
 function showAuthMessage(msg) {
   authMessage.textContent = msg;
 }
@@ -99,9 +117,10 @@ async function logout() {
     return;
   }
 
-  showAuthMessage("Logged out.");
-  allSentences = [];
-  renderSentences([]);
+  updateAuthUI(null);
+allSentences = [];
+renderSentences([]);
+
 }
 
 async function saveSentence() {
@@ -220,9 +239,21 @@ logoutBtn.addEventListener("click", logout);
 saveSentenceBtn.addEventListener("click", saveSentence);
 
 supabaseClient.auth.getSession().then(async ({ data }) => {
+  updateAuthUI(data.session);
+
   if (data.session) {
-    showAuthMessage("Session restored.");
     await loadSentences();
+  }
+});
+
+supabaseClient.auth.onAuthStateChange(async (event, session) => {
+  updateAuthUI(session);
+
+  if (session) {
+    await loadSentences();
+  } else {
+    allSentences = [];
+    renderSentences([]);
   }
 });
 
