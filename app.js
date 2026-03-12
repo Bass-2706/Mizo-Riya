@@ -73,9 +73,16 @@ async function login() {
 }
 
 async function logout() {
-  const { error } = await supabaseClient.auth.signOut();
-  if (error) { showAuthMessage(error.message); return; }
-  window.location.reload();
+  try {
+    await supabaseClient.auth.signOut();
+  } catch(e) {}
+  // clear all supabase keys from localStorage
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith("sb-") || key.includes("supabase")) {
+      localStorage.removeItem(key);
+    }
+  });
+  window.location.href = window.location.href.split("?")[0];
 }
 
 function startEdit(id) {
@@ -180,7 +187,6 @@ async function loadSentences() {
   renderSentences(allSentences);
 }
 
-// SUGGESTIONS
 function showSuggestions(query) {
   if (!query || query.length < 1) {
     suggestionsBox.classList.remove("visible");
@@ -209,23 +215,16 @@ function showSuggestions(query) {
 function pickSuggestion(id) {
   const item = allSentences.find(s => s.id === id);
   if (!item) return;
-
-  // close search bar and dropdown
   suggestionsBox.classList.remove("visible");
   suggestionsBox.innerHTML = "";
   searchInput.value = "";
   document.getElementById("searchWrapper").classList.remove("open");
-
-  // show all sentences so the target is visible
   renderSentences(allSentences);
-
-  // scroll to the sentence card
   setTimeout(() => {
     const card = document.getElementById("sentence-" + id);
     if (card) {
       card.scrollIntoView({ behavior: "smooth", block: "center" });
       card.style.outline = "2px solid #ff4fa3";
-      card.style.transition = "outline 0.3s";
       setTimeout(() => { card.style.outline = "none"; }, 2000);
     }
   }, 100);
@@ -243,7 +242,6 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// SEARCH TOGGLE
 const searchToggle = document.getElementById("searchToggle");
 const searchWrapper = document.getElementById("searchWrapper");
 
