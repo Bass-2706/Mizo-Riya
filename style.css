@@ -1,8 +1,8 @@
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background-image: 
-    linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)), 
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)),
     url("bg1.jpg");
   background-repeat: no-repeat;
   background-size: cover;
@@ -12,49 +12,116 @@ body {
   min-height: 100vh;
 }
 
-
-.container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 24px;
+/* TOP BAR */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px 6px 20px;
+  background: rgba(10, 10, 20, 0.75);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
-h1, h2, .subtitle {
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.75);
+.topbar-left {
+  display: flex;
+  flex-direction: column;
 }
 
-h1, h2 {
-  margin-top: 0;
+.topbar h1 {
+  margin: 0;
+  font-size: 22px;
+  color: #ff4fa3;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.75);
 }
 
-.subtitle {
-  color: #cbd5e1;
-  margin-bottom: 24px;
+.topbar .subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.75);
 }
 
-.card {
-  background: rgba(17, 24, 39, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 20px;
-  backdrop-filter: blur(6px);
+.search-icon-btn {
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
 }
 
+.search-icon-btn:hover {
+  background: rgba(255,255,255,0.12);
+}
 
-input, textarea {
+/* SEARCH BAR */
+.search-bar-wrapper {
+  display: none;
+  padding: 10px 20px;
+  background: rgba(10, 10, 20, 0.85);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.search-bar-wrapper.open {
+  display: block;
+}
+
+.search-bar-wrapper input {
   width: 100%;
   box-sizing: border-box;
-  margin-bottom: 12px;
-  padding: 12px;
+  padding: 10px 14px;
   border-radius: 10px;
   border: none;
   outline: none;
   font-size: 14px;
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+/* CONTAINER */
+.container {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 20px 16px 40px 16px;
+}
+
+h2 {
+  margin-top: 0;
+  font-size: 16px;
+  color: #e2e8f0;
+}
+
+/* CARDS */
+.card {
+  background: rgba(17, 24, 39, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 16px;
+  backdrop-filter: blur(6px);
+}
+
+input, textarea {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  outline: none;
+  font-size: 14px;
+  background: #1e293b;
+  color: #f8fafc;
 }
 
 textarea {
-  min-height: 90px;
+  min-height: 80px;
   resize: vertical;
 }
 
@@ -66,6 +133,11 @@ button {
   padding: 10px 14px;
   font-weight: bold;
   cursor: pointer;
+  transition: background 0.2s;
+}
+
+button:hover {
+  opacity: 0.88;
 }
 
 button.secondary {
@@ -77,26 +149,31 @@ button.secondary {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 
+/* SENTENCE ITEMS */
 .sentence-item {
-  border: 1px solid #334155;
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 12px;
   padding: 14px;
-  margin-top: 12px;
+  margin-top: 10px;
+  background: rgba(255,255,255,0.03);
 }
 
 .meta {
   color: #94a3b8;
-  font-size: 13px;
-  margin-top: 8px;
+  font-size: 12px;
+  margin-top: 6px;
+  margin-bottom: 8px;
 }
 
 .small-btn {
-  margin-top: 10px;
   margin-right: 8px;
   background: #1d4ed8;
   color: white;
+  padding: 7px 12px;
+  font-size: 13px;
 }
 
 .delete-btn {
@@ -106,25 +183,21 @@ button.secondary {
 
 #authMessage, #saveMessage {
   color: #93c5fd;
-  font-size: 14px;
+  font-size: 13px;
+  margin-top: 6px;
 }
 
-h1 {
-  color: #ff4fa3;
-}
-
-.subtitle {
-  color: #ffffff;
-}
-
-#loginBtn,
-#signupBtn {
+/* LOGIN/SIGNUP BUTTONS */
+#loginBtn, #signupBtn {
   background: #22c55e;
   color: #04130d;
 }
 
-#loginBtn:hover,
-#signupBtn:hover {
+#loginBtn:hover, #signupBtn:hover {
   background: #16a34a;
 }
 
+/* LOGOUT BUTTON hidden by default */
+#logoutBtn {
+  display: none;
+}
