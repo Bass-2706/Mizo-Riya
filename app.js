@@ -28,6 +28,7 @@ const suggestionsBox = document.getElementById("suggestionsBox");
 
 let allSentences = [];
 let editingId = null;
+let appReady = false;
 
 function updateAuthUI(session) {
   const loggedIn = !!session;
@@ -36,11 +37,9 @@ function updateAuthUI(session) {
   logoutBtn.style.display = loggedIn ? "inline-block" : "none";
   emailInput.style.display = loggedIn ? "none" : "block";
   passwordInput.style.display = loggedIn ? "none" : "block";
-  if (loggedIn) {
-    authMessage.textContent = "Logged in as " + (session.user.email || "");
-  } else {
-    authMessage.textContent = "Logged out.";
-  }
+  authMessage.textContent = loggedIn
+    ? "Logged in as " + (session.user.email || "")
+    : "";
 }
 
 function showAuthMessage(msg) { authMessage.textContent = msg; }
@@ -73,10 +72,7 @@ async function login() {
 }
 
 async function logout() {
-  try {
-    await supabaseClient.auth.signOut();
-  } catch(e) {}
-  // clear all supabase keys from localStorage
+  try { await supabaseClient.auth.signOut(); } catch(e) {}
   Object.keys(localStorage).forEach(key => {
     if (key.startsWith("sb-") || key.includes("supabase")) {
       localStorage.removeItem(key);
@@ -101,10 +97,8 @@ function startEdit(id) {
 
 function cancelEdit() {
   editingId = null;
-  englishText.value = "";
-  mizoText.value = "";
-  categoryInput.value = "";
-  notesInput.value = "";
+  englishText.value = ""; mizoText.value = "";
+  categoryInput.value = ""; notesInput.value = "";
   saveSentenceBtn.textContent = "Save sentence";
   saveSentenceBtn.style.background = "";
   showSaveMessage("");
@@ -188,21 +182,13 @@ async function loadSentences() {
 }
 
 function showSuggestions(query) {
-  if (!query || query.length < 1) {
-    suggestionsBox.classList.remove("visible");
-    suggestionsBox.innerHTML = "";
-    return;
-  }
+  if (!query) { suggestionsBox.classList.remove("visible"); suggestionsBox.innerHTML = ""; return; }
   const q = query.toLowerCase();
   const matches = allSentences.filter(item =>
     item.english_text.toLowerCase().includes(q) ||
     item.mizo_text.toLowerCase().includes(q)
   ).slice(0, 6);
-  if (matches.length === 0) {
-    suggestionsBox.classList.remove("visible");
-    suggestionsBox.innerHTML = "";
-    return;
-  }
+  if (matches.length === 0) { suggestionsBox.classList.remove("visible"); suggestionsBox.innerHTML = ""; return; }
   suggestionsBox.innerHTML = matches.map(item => `
     <div class="suggestion-item" onclick="pickSuggestion('${item.id}')">
       <div class="suggestion-english">${escapeHtml(item.english_text)}</div>
@@ -213,10 +199,7 @@ function showSuggestions(query) {
 }
 
 function pickSuggestion(id) {
-  const item = allSentences.find(s => s.id === id);
-  if (!item) return;
-  suggestionsBox.classList.remove("visible");
-  suggestionsBox.innerHTML = "";
+  suggestionsBox.classList.remove("visible"); suggestionsBox.innerHTML = "";
   searchInput.value = "";
   document.getElementById("searchWrapper").classList.remove("open");
   renderSentences(allSentences);
@@ -237,22 +220,19 @@ searchInput.addEventListener("input", () => {
 
 document.addEventListener("click", (e) => {
   if (!e.target.closest(".search-bar-wrapper")) {
-    suggestionsBox.classList.remove("visible");
-    suggestionsBox.innerHTML = "";
+    suggestionsBox.classList.remove("visible"); suggestionsBox.innerHTML = "";
   }
 });
 
 const searchToggle = document.getElementById("searchToggle");
 const searchWrapper = document.getElementById("searchWrapper");
-
 searchToggle.addEventListener("click", () => {
   searchWrapper.classList.toggle("open");
   if (searchWrapper.classList.contains("open")) {
     searchInput.focus();
   } else {
     searchInput.value = "";
-    suggestionsBox.classList.remove("visible");
-    suggestionsBox.innerHTML = "";
+    suggestionsBox.classList.remove("visible"); suggestionsBox.innerHTML = "";
     renderSentences(allSentences);
   }
 });
@@ -262,15 +242,30 @@ loginBtn.addEventListener("click", login);
 logoutBtn.addEventListener("click", logout);
 saveSentenceBtn.addEventListener("click", saveSentence);
 
-supabaseClient.auth.onAuthStateChange(async (event, session) => {
+// MAIN INIT - runs once on page load
+// checks session first, then sets up listener
+async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
   updateAuthUI(session);
   if (session) {
     await loadSentences();
-  } else {
-    allSentences = [];
-    renderSentences([]);
   }
-});
+  appReady = true;
+
+  // only listen to changes AFTER init is done
+  supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    if (!appReady) return;
+    updateAuthUI(session);
+    if (session) {
+      await loadSentences();
+    } else {
+      allSentences = [];
+      renderSentences([]);
+    }
+  });
+}
+
+init();
 
 supabaseClient
   .channel("sentences-live")
