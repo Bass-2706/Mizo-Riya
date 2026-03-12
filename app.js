@@ -28,7 +28,6 @@ const suggestionsBox = document.getElementById("suggestionsBox");
 
 let allSentences = [];
 let editingId = null;
-let appReady = false;
 
 function updateAuthUI(session) {
   const loggedIn = !!session;
@@ -37,9 +36,7 @@ function updateAuthUI(session) {
   logoutBtn.style.display = loggedIn ? "inline-block" : "none";
   emailInput.style.display = loggedIn ? "none" : "block";
   passwordInput.style.display = loggedIn ? "none" : "block";
-  authMessage.textContent = loggedIn
-    ? "Logged in as " + (session.user.email || "")
-    : "";
+  authMessage.textContent = loggedIn ? "Logged in as " + (session.user.email || "") : "";
 }
 
 function showAuthMessage(msg) { authMessage.textContent = msg; }
@@ -97,8 +94,10 @@ function startEdit(id) {
 
 function cancelEdit() {
   editingId = null;
-  englishText.value = ""; mizoText.value = "";
-  categoryInput.value = ""; notesInput.value = "";
+  englishText.value = "";
+  mizoText.value = "";
+  categoryInput.value = "";
+  notesInput.value = "";
   saveSentenceBtn.textContent = "Save sentence";
   saveSentenceBtn.style.background = "";
   showSaveMessage("");
@@ -124,8 +123,10 @@ async function saveSentence() {
       english_text: english, mizo_text: mizo, category, notes, created_by: user.id
     });
     if (error) { showSaveMessage(error.message); return; }
-    englishText.value = ""; mizoText.value = "";
-    categoryInput.value = ""; notesInput.value = "";
+    englishText.value = "";
+    mizoText.value = "";
+    categoryInput.value = "";
+    notesInput.value = "";
     showSaveMessage("Sentence saved.");
   }
   await loadSentences();
@@ -154,20 +155,17 @@ function renderSentences(items) {
     (item.notes || "").toLowerCase().includes(q)
   );
   if (filtered.length === 0) {
-    sentenceList.innerHTML = "<p>No sentences found.</p>";
+    sentenceList.innerHTML = `<p style="text-align:center;color:#aaa;">No sentences found.</p>`;
     return;
   }
   sentenceList.innerHTML = filtered.map(item => `
-    <div class="sentence-item" id="sentence-${item.id}">
-      <div><strong>English:</strong> ${escapeHtml(item.english_text)}</div>
-      <div style="margin-top:8px;"><strong>Mizo:</strong> ${escapeHtml(item.mizo_text)}</div>
-      <div class="meta">
-        Category: ${escapeHtml(item.category || "general")}
-        ${item.notes ? " &bull; Notes: " + escapeHtml(item.notes) : ""}
-      </div>
-      <div>
-        <button class="small-btn" onclick="startEdit('${item.id}')">Edit</button>
-        <button class="delete-btn small-btn" onclick="deleteSentence('${item.id}')">Delete</button>
+    <div class="sentence-card" id="sentence-${item.id}">
+      <p><strong>English:</strong> ${escapeHtml(item.english_text)}</p>
+      <p><strong>Mizo:</strong> ${escapeHtml(item.mizo_text)}</p>
+      <p class="meta">Category: ${escapeHtml(item.category || "general")}${item.notes ? " &bull; Notes: " + escapeHtml(item.notes) : ""}</p>
+      <div class="card-actions">
+        <button onclick="startEdit('${item.id}')">Edit</button>
+        <button onclick="deleteSentence('${item.id}')">Delete</button>
       </div>
     </div>
   `).join("");
@@ -176,32 +174,45 @@ function renderSentences(items) {
 async function loadSentences() {
   const { data, error } = await supabaseClient
     .from("sentences").select("*").order("updated_at", { ascending: false });
-  if (error) { sentenceList.innerHTML = `<p>${error.message}</p>`; return; }
+  if (error) {
+    sentenceList.innerHTML = `<p style="color:red">${error.message}</p>`;
+    return;
+  }
   allSentences = data || [];
   renderSentences(allSentences);
 }
 
 function showSuggestions(query) {
-  if (!query) { suggestionsBox.classList.remove("visible"); suggestionsBox.innerHTML = ""; return; }
+  if (!query) {
+    suggestionsBox.classList.remove("visible");
+    suggestionsBox.innerHTML = "";
+    return;
+  }
   const q = query.toLowerCase();
   const matches = allSentences.filter(item =>
     item.english_text.toLowerCase().includes(q) ||
     item.mizo_text.toLowerCase().includes(q)
   ).slice(0, 6);
-  if (matches.length === 0) { suggestionsBox.classList.remove("visible"); suggestionsBox.innerHTML = ""; return; }
+  if (matches.length === 0) {
+    suggestionsBox.classList.remove("visible");
+    suggestionsBox.innerHTML = "";
+    return;
+  }
   suggestionsBox.innerHTML = matches.map(item => `
     <div class="suggestion-item" onclick="pickSuggestion('${item.id}')">
-      <div class="suggestion-english">${escapeHtml(item.english_text)}</div>
-      <div class="suggestion-mizo">${escapeHtml(item.mizo_text)}</div>
+      <span class="sug-en">${escapeHtml(item.english_text)}</span>
+      <span class="sug-mz">${escapeHtml(item.mizo_text)}</span>
     </div>
   `).join("");
   suggestionsBox.classList.add("visible");
 }
 
 function pickSuggestion(id) {
-  suggestionsBox.classList.remove("visible"); suggestionsBox.innerHTML = "";
+  suggestionsBox.classList.remove("visible");
+  suggestionsBox.innerHTML = "";
   searchInput.value = "";
-  document.getElementById("searchWrapper").classList.remove("open");
+  const sw = document.getElementById("searchWrapper");
+  if (sw) sw.classList.remove("open");
   renderSentences(allSentences);
   setTimeout(() => {
     const card = document.getElementById("sentence-" + id);
@@ -220,41 +231,48 @@ searchInput.addEventListener("input", () => {
 
 document.addEventListener("click", (e) => {
   if (!e.target.closest(".search-bar-wrapper")) {
-    suggestionsBox.classList.remove("visible"); suggestionsBox.innerHTML = "";
+    suggestionsBox.classList.remove("visible");
+    suggestionsBox.innerHTML = "";
   }
 });
 
 const searchToggle = document.getElementById("searchToggle");
 const searchWrapper = document.getElementById("searchWrapper");
-searchToggle.addEventListener("click", () => {
-  searchWrapper.classList.toggle("open");
-  if (searchWrapper.classList.contains("open")) {
-    searchInput.focus();
-  } else {
-    searchInput.value = "";
-    suggestionsBox.classList.remove("visible"); suggestionsBox.innerHTML = "";
-    renderSentences(allSentences);
-  }
-});
+if (searchToggle && searchWrapper) {
+  searchToggle.addEventListener("click", () => {
+    searchWrapper.classList.toggle("open");
+    if (searchWrapper.classList.contains("open")) {
+      searchInput.focus();
+    } else {
+      searchInput.value = "";
+      suggestionsBox.classList.remove("visible");
+      suggestionsBox.innerHTML = "";
+      renderSentences(allSentences);
+    }
+  });
+}
 
 signupBtn.addEventListener("click", signUp);
 loginBtn.addEventListener("click", login);
 logoutBtn.addEventListener("click", logout);
 saveSentenceBtn.addEventListener("click", saveSentence);
 
-// MAIN INIT - runs once on page load
-// checks session first, then sets up listener
+// MAIN INIT - uses onAuthStateChange as primary driver
+// This works reliably on BOTH mobile and desktop
 async function init() {
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  updateAuthUI(session);
-  if (session) {
-    await loadSentences();
-  }
-  appReady = true;
+  // First try getSession (fast path for desktop)
+  const { data: { session: initialSession } } = await supabaseClient.auth.getSession();
 
-  // only listen to changes AFTER init is done
+  if (initialSession) {
+    updateAuthUI(initialSession);
+    await loadSentences();
+  } else {
+    // Show logged-out UI immediately
+    updateAuthUI(null);
+  }
+
+  // onAuthStateChange handles mobile where session loads async
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
-    if (!appReady) return;
     updateAuthUI(session);
     if (session) {
       await loadSentences();
