@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mizo Duo</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Mizo Duo</h1>
+    <p class="subtitle">English ↔ Mizo shared learning app</p>
+
+    <div class="card">
+      <h2>Login / Sign up</h2>
+      <input type="email" id="email" placeholder="Email" />
+      <input type="password" id="password" placeholder="Password" />
+      <div class="row">
+        <button id="signupBtn">Sign up</button>
+        <button id="loginBtn">Login</button>
+        <button id="logoutBtn" class="secondary">Logout</button>
+      </div>
+      <p id="authMessage"></p>
+    </div>
+
+    <div class="card">
+      <h2>Add sentence</h2>
+      <textarea id="englishText" placeholder="English sentence"></textarea>
+      <textarea id="mizoText" placeholder="Mizo sentence"></textarea>
+      <input type="text" id="category" placeholder="Category (optional)" />
+      <textarea id="notes" placeholder="Notes (optional)"></textarea>
+      <button id="saveSentenceBtn">Save sentence</button>
+      <p id="saveMessage"></p>
+    </div>
+
+    <div class="card">
+      <h2>Sentences</h2>
+      <input type="text" id="searchInput" placeholder="Search..." />
+      <div id="sentenceList"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+</body>
+</html>
