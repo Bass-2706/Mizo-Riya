@@ -111,17 +111,13 @@ async function login() {
 
 async function logout() {
   const { error } = await supabaseClient.auth.signOut();
-
   if (error) {
     showAuthMessage(error.message);
     return;
   }
-
-  updateAuthUI(null);
-allSentences = [];
-renderSentences([]);
-
+  window.location.reload();
 }
+
 
 async function saveSentence() {
   const english = englishText.value.trim();
