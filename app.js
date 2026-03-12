@@ -28,6 +28,7 @@ const searchInput = document.getElementById("searchInput");
 const sentenceList = document.getElementById("sentenceList");
 
 let allSentences = [];
+let editingId = null;
 
 function updateAuthUI(session) {
   const loggedIn = !!session;
@@ -62,47 +63,53 @@ async function ensureMember(user) {
 async function signUp() {
   const email = emailInput.value.trim();
   const password = passwordInput.value.trim();
-  if (!email || !password) {
-    showAuthMessage("Enter email and password.");
-    return;
-  }
+  if (!email || !password) { showAuthMessage("Enter email and password."); return; }
   const { data, error } = await supabaseClient.auth.signUp({ email, password });
-  if (error) {
-    showAuthMessage(error.message);
-    return;
-  }
-  if (data.user) {
-    await ensureMember(data.user);
-  }
+  if (error) { showAuthMessage(error.message); return; }
+  if (data.user) await ensureMember(data.user);
   showAuthMessage("Signup successful. You can now login.");
 }
 
 async function login() {
   const email = emailInput.value.trim();
   const password = passwordInput.value.trim();
-  if (!email || !password) {
-    showAuthMessage("Enter email and password.");
-    return;
-  }
+  if (!email || !password) { showAuthMessage("Enter email and password."); return; }
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) {
-    showAuthMessage(error.message);
-    return;
-  }
-  if (data.user) {
-    await ensureMember(data.user);
-  }
+  if (error) { showAuthMessage(error.message); return; }
+  if (data.user) await ensureMember(data.user);
   updateAuthUI(data.session);
   await loadSentences();
 }
 
 async function logout() {
   const { error } = await supabaseClient.auth.signOut();
-  if (error) {
-    showAuthMessage(error.message);
-    return;
-  }
+  if (error) { showAuthMessage(error.message); return; }
   window.location.reload();
+}
+
+function startEdit(id) {
+  const item = allSentences.find(s => s.id === id);
+  if (!item) return;
+  editingId = id;
+  englishText.value = item.english_text;
+  mizoText.value = item.mizo_text;
+  categoryInput.value = item.category || "";
+  notesInput.value = item.notes || "";
+  saveSentenceBtn.textContent = "Update sentence";
+  saveSentenceBtn.style.background = "#f59e0b";
+  showSaveMessage("Editing sentence. Change the fields and click Update.");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function cancelEdit() {
+  editingId = null;
+  englishText.value = "";
+  mizoText.value = "";
+  categoryInput.value = "";
+  notesInput.value = "";
+  saveSentenceBtn.textContent = "Save sentence";
+  saveSentenceBtn.style.background = "";
+  showSaveMessage("");
 }
 
 async function saveSentence() {
@@ -110,40 +117,43 @@ async function saveSentence() {
   const mizo = mizoText.value.trim();
   const category = categoryInput.value.trim() || "general";
   const notes = notesInput.value.trim();
-  if (!english || !mizo) {
-    showSaveMessage("Enter both English and Mizo sentence.");
-    return;
-  }
+  if (!english || !mizo) { showSaveMessage("Enter both English and Mizo sentence."); return; }
   const { data: { user } } = await supabaseClient.auth.getUser();
-  if (!user) {
-    showSaveMessage("Please login first.");
-    return;
+  if (!user) { showSaveMessage("Please login first."); return; }
+
+  if (editingId) {
+    const { error } = await supabaseClient.from("sentences").update({
+      english_text: english,
+      mizo_text: mizo,
+      category,
+      notes
+    }).eq("id", editingId);
+    if (error) { showSaveMessage(error.message); return; }
+    showSaveMessage("Sentence updated.");
+    cancelEdit();
+  } else {
+    const { error } = await supabaseClient.from("sentences").insert({
+      english_text: english,
+      mizo_text: mizo,
+      category,
+      notes,
+      created_by: user.id
+    });
+    if (error) { showSaveMessage(error.message); return; }
+    englishText.value = "";
+    mizoText.value = "";
+    categoryInput.value = "";
+    notesInput.value = "";
+    showSaveMessage("Sentence saved.");
   }
-  const { error } = await supabaseClient.from("sentences").insert({
-    english_text: english,
-    mizo_text: mizo,
-    category,
-    notes,
-    created_by: user.id
-  });
-  if (error) {
-    showSaveMessage(error.message);
-    return;
-  }
-  englishText.value = "";
-  mizoText.value = "";
-  categoryInput.value = "";
-  notesInput.value = "";
-  showSaveMessage("Sentence saved.");
   await loadSentences();
 }
 
 async function deleteSentence(id) {
+  if (!confirm("Delete this sentence?")) return;
   const { error } = await supabaseClient.from("sentences").delete().eq("id", id);
-  if (error) {
-    alert(error.message);
-    return;
-  }
+  if (error) { alert(error.message); return; }
+  if (editingId === id) cancelEdit();
   await loadSentences();
 }
 
@@ -161,21 +171,20 @@ function renderSentences(items) {
     sentenceList.innerHTML = "<p>No sentences found.</p>";
     return;
   }
-  sentenceList.innerHTML = filtered
-    .map(
-      (item) => `
-        <div class="sentence-item">
-          <div><strong>English:</strong> ${escapeHtml(item.english_text)}</div>
-          <div style="margin-top:8px;"><strong>Mizo:</strong> ${escapeHtml(item.mizo_text)}</div>
-          <div class="meta">
-            Category: ${escapeHtml(item.category || "general")}
-            ${item.notes ? " • Notes: " + escapeHtml(item.notes) : ""}
-          </div>
-          <button class="delete-btn small-btn" onclick="deleteSentence('${item.id}')">Delete</button>
-        </div>
-      `
-    )
-    .join("");
+  sentenceList.innerHTML = filtered.map((item) => `
+    <div class="sentence-item">
+      <div><strong>English:</strong> ${escapeHtml(item.english_text)}</div>
+      <div style="margin-top:8px;"><strong>Mizo:</strong> ${escapeHtml(item.mizo_text)}</div>
+      <div class="meta">
+        Category: ${escapeHtml(item.category || "general")}
+        ${item.notes ? " &bull; Notes: " + escapeHtml(item.notes) : ""}
+      </div>
+      <div>
+        <button class="small-btn" onclick="startEdit('${item.id}')">Edit</button>
+        <button class="delete-btn small-btn" onclick="deleteSentence('${item.id}')">Delete</button>
+      </div>
+    </div>
+  `).join("");
 }
 
 function escapeHtml(text) {
@@ -189,10 +198,7 @@ async function loadSentences() {
     .from("sentences")
     .select("*")
     .order("updated_at", { ascending: false });
-  if (error) {
-    sentenceList.innerHTML = `<p>${error.message}</p>`;
-    return;
-  }
+  if (error) { sentenceList.innerHTML = `<p>${error.message}</p>`; return; }
   allSentences = data || [];
   renderSentences(allSentences);
 }
@@ -226,3 +232,4 @@ supabaseClient
   .subscribe();
 
 window.deleteSentence = deleteSentence;
+window.startEdit = startEdit;
