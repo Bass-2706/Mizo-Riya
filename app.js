@@ -233,3 +233,17 @@ supabaseClient
 
 window.deleteSentence = deleteSentence;
 window.startEdit = startEdit;
+
+// SEARCH TOGGLE
+const searchToggle = document.getElementById("searchToggle");
+const searchWrapper = document.getElementById("searchWrapper");
+
+searchToggle.addEventListener("click", () => {
+  searchWrapper.classList.toggle("open");
+  if (searchWrapper.classList.contains("open")) {
+    searchInput.focus();
+  } else {
+    searchInput.value = "";
+    renderSentences(allSentences);
+  }
+});
