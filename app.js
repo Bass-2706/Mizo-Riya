@@ -16,16 +16,15 @@ const signupBtn = document.getElementById("signupBtn");
 const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const authMessage = document.getElementById("authMessage");
-
 const englishText = document.getElementById("englishText");
 const mizoText = document.getElementById("mizoText");
 const categoryInput = document.getElementById("category");
 const notesInput = document.getElementById("notes");
 const saveSentenceBtn = document.getElementById("saveSentenceBtn");
 const saveMessage = document.getElementById("saveMessage");
-
 const searchInput = document.getElementById("searchInput");
 const sentenceList = document.getElementById("sentenceList");
+const suggestionsBox = document.getElementById("suggestionsBox");
 
 let allSentences = [];
 let editingId = null;
@@ -44,20 +43,12 @@ function updateAuthUI(session) {
   }
 }
 
-function showAuthMessage(msg) {
-  authMessage.textContent = msg;
-}
-
-function showSaveMessage(msg) {
-  saveMessage.textContent = msg;
-}
+function showAuthMessage(msg) { authMessage.textContent = msg; }
+function showSaveMessage(msg) { saveMessage.textContent = msg; }
 
 async function ensureMember(user) {
   if (!user) return;
-  await supabaseClient.from("members").upsert({
-    user_id: user.id,
-    email: user.email
-  });
+  await supabaseClient.from("members").upsert({ user_id: user.id, email: user.email });
 }
 
 async function signUp() {
@@ -120,30 +111,20 @@ async function saveSentence() {
   if (!english || !mizo) { showSaveMessage("Enter both English and Mizo sentence."); return; }
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) { showSaveMessage("Please login first."); return; }
-
   if (editingId) {
     const { error } = await supabaseClient.from("sentences").update({
-      english_text: english,
-      mizo_text: mizo,
-      category,
-      notes
+      english_text: english, mizo_text: mizo, category, notes
     }).eq("id", editingId);
     if (error) { showSaveMessage(error.message); return; }
     showSaveMessage("Sentence updated.");
     cancelEdit();
   } else {
     const { error } = await supabaseClient.from("sentences").insert({
-      english_text: english,
-      mizo_text: mizo,
-      category,
-      notes,
-      created_by: user.id
+      english_text: english, mizo_text: mizo, category, notes, created_by: user.id
     });
     if (error) { showSaveMessage(error.message); return; }
-    englishText.value = "";
-    mizoText.value = "";
-    categoryInput.value = "";
-    notesInput.value = "";
+    englishText.value = ""; mizoText.value = "";
+    categoryInput.value = ""; notesInput.value = "";
     showSaveMessage("Sentence saved.");
   }
   await loadSentences();
@@ -157,22 +138,26 @@ async function deleteSentence(id) {
   await loadSentences();
 }
 
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 function renderSentences(items) {
   const q = searchInput.value.trim().toLowerCase();
-  const filtered = items.filter((item) => {
-    return (
-      item.english_text.toLowerCase().includes(q) ||
-      item.mizo_text.toLowerCase().includes(q) ||
-      (item.category || "").toLowerCase().includes(q) ||
-      (item.notes || "").toLowerCase().includes(q)
-    );
-  });
+  const filtered = items.filter(item =>
+    item.english_text.toLowerCase().includes(q) ||
+    item.mizo_text.toLowerCase().includes(q) ||
+    (item.category || "").toLowerCase().includes(q) ||
+    (item.notes || "").toLowerCase().includes(q)
+  );
   if (filtered.length === 0) {
     sentenceList.innerHTML = "<p>No sentences found.</p>";
     return;
   }
-  sentenceList.innerHTML = filtered.map((item) => `
-    <div class="sentence-item">
+  sentenceList.innerHTML = filtered.map(item => `
+    <div class="sentence-item" id="sentence-${item.id}">
       <div><strong>English:</strong> ${escapeHtml(item.english_text)}</div>
       <div style="margin-top:8px;"><strong>Mizo:</strong> ${escapeHtml(item.mizo_text)}</div>
       <div class="meta">
@@ -187,23 +172,93 @@ function renderSentences(items) {
   `).join("");
 }
 
-function escapeHtml(text) {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
-}
-
 async function loadSentences() {
   const { data, error } = await supabaseClient
-    .from("sentences")
-    .select("*")
-    .order("updated_at", { ascending: false });
+    .from("sentences").select("*").order("updated_at", { ascending: false });
   if (error) { sentenceList.innerHTML = `<p>${error.message}</p>`; return; }
   allSentences = data || [];
   renderSentences(allSentences);
 }
 
-searchInput.addEventListener("input", () => renderSentences(allSentences));
+// SUGGESTIONS
+function showSuggestions(query) {
+  if (!query || query.length < 1) {
+    suggestionsBox.classList.remove("visible");
+    suggestionsBox.innerHTML = "";
+    return;
+  }
+  const q = query.toLowerCase();
+  const matches = allSentences.filter(item =>
+    item.english_text.toLowerCase().includes(q) ||
+    item.mizo_text.toLowerCase().includes(q)
+  ).slice(0, 6);
+  if (matches.length === 0) {
+    suggestionsBox.classList.remove("visible");
+    suggestionsBox.innerHTML = "";
+    return;
+  }
+  suggestionsBox.innerHTML = matches.map(item => `
+    <div class="suggestion-item" onclick="pickSuggestion('${item.id}')">
+      <div class="suggestion-english">${escapeHtml(item.english_text)}</div>
+      <div class="suggestion-mizo">${escapeHtml(item.mizo_text)}</div>
+    </div>
+  `).join("");
+  suggestionsBox.classList.add("visible");
+}
+
+function pickSuggestion(id) {
+  const item = allSentences.find(s => s.id === id);
+  if (!item) return;
+
+  // close search bar and dropdown
+  suggestionsBox.classList.remove("visible");
+  suggestionsBox.innerHTML = "";
+  searchInput.value = "";
+  document.getElementById("searchWrapper").classList.remove("open");
+
+  // show all sentences so the target is visible
+  renderSentences(allSentences);
+
+  // scroll to the sentence card
+  setTimeout(() => {
+    const card = document.getElementById("sentence-" + id);
+    if (card) {
+      card.scrollIntoView({ behavior: "smooth", block: "center" });
+      card.style.outline = "2px solid #ff4fa3";
+      card.style.transition = "outline 0.3s";
+      setTimeout(() => { card.style.outline = "none"; }, 2000);
+    }
+  }, 100);
+}
+
+searchInput.addEventListener("input", () => {
+  showSuggestions(searchInput.value.trim());
+  renderSentences(allSentences);
+});
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".search-bar-wrapper")) {
+    suggestionsBox.classList.remove("visible");
+    suggestionsBox.innerHTML = "";
+  }
+});
+
+// SEARCH TOGGLE
+const searchToggle = document.getElementById("searchToggle");
+const searchWrapper = document.getElementById("searchWrapper");
+
+searchToggle.addEventListener("click", () => {
+  searchWrapper.classList.toggle("open");
+  if (searchWrapper.classList.contains("open")) {
+    searchInput.focus();
+  } else {
+    searchInput.value = "";
+    suggestionsBox.classList.remove("visible");
+    suggestionsBox.innerHTML = "";
+    renderSentences(allSentences);
+  }
+});
+
 signupBtn.addEventListener("click", signUp);
 loginBtn.addEventListener("click", login);
 logoutBtn.addEventListener("click", logout);
@@ -221,85 +276,14 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
 
 supabaseClient
   .channel("sentences-live")
-  .on(
-    "postgres_changes",
+  .on("postgres_changes",
     { event: "*", schema: "public", table: "sentences" },
     async () => {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (session) await loadSentences();
     }
-  )
-  .subscribe();
+  ).subscribe();
 
 window.deleteSentence = deleteSentence;
 window.startEdit = startEdit;
-
-// SEARCH TOGGLE
-const searchToggle = document.getElementById("searchToggle");
-const searchWrapper = document.getElementById("searchWrapper");
-
-searchToggle.addEventListener("click", () => {
-  searchWrapper.classList.toggle("open");
-  if (searchWrapper.classList.contains("open")) {
-    searchInput.focus();
-  } else {
-    searchInput.value = "";
-    renderSentences(allSentences);
-  }
-});
-
-
-// SUGGESTIONS DROPDOWN
-const suggestionsBox = document.getElementById("suggestionsBox");
-
-function showSuggestions(query) {
-  if (!query || query.length < 1) {
-    suggestionsBox.classList.remove("visible");
-    suggestionsBox.innerHTML = "";
-    return;
-  }
-
-  const q = query.toLowerCase();
-  const matches = allSentences.filter(item =>
-    item.english_text.toLowerCase().includes(q) ||
-    item.mizo_text.toLowerCase().includes(q)
-  ).slice(0, 6);
-
-  if (matches.length === 0) {
-    suggestionsBox.classList.remove("visible");
-    suggestionsBox.innerHTML = "";
-    return;
-  }
-
-  suggestionsBox.innerHTML = matches.map(item => `
-    <div class="suggestion-item" onclick="pickSuggestion('${item.id}')">
-      <div class="suggestion-english">${escapeHtml(item.english_text)}</div>
-      <div class="suggestion-mizo">${escapeHtml(item.mizo_text)}</div>
-    </div>
-  `).join("");
-
-  suggestionsBox.classList.add("visible");
-}
-
-function pickSuggestion(id) {
-  const item = allSentences.find(s => s.id === id);
-  if (!item) return;
-  searchInput.value = item.english_text;
-  suggestionsBox.classList.remove("visible");
-  suggestionsBox.innerHTML = "";
-  renderSentences(allSentences);
-}
-
-searchInput.addEventListener("input", () => {
-  showSuggestions(searchInput.value.trim());
-  renderSentences(allSentences);
-});
-
-document.addEventListener("click", (e) => {
-  if (!e.target.closest(".search-bar-wrapper")) {
-    suggestionsBox.classList.remove("visible");
-    suggestionsBox.innerHTML = "";
-  }
-});
-
 window.pickSuggestion = pickSuggestion;
