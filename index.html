@@ -7,11 +7,25 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>Mizo Duo</h1>
-    <p class="subtitle">English ↔ Mizo shared learning app</p>
 
-    <div class="card">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>Mizo Duo</h1>
+      <p class="subtitle">English ↔ Mizo</p>
+    </div>
+    <button class="search-icon-btn" id="searchToggle">&#128269;</button>
+  </div>
+
+  <!-- SEARCH BAR (hidden by default) -->
+  <div class="search-bar-wrapper" id="searchWrapper">
+    <input type="text" id="searchInput" placeholder="Search sentences..." />
+  </div>
+
+  <div class="container">
+
+    <!-- LOGIN CARD -->
+    <div class="card" id="authCard">
       <h2>Login / Sign up</h2>
       <input type="email" id="email" placeholder="Email" />
       <input type="password" id="password" placeholder="Password" />
@@ -23,6 +37,7 @@
       <p id="authMessage"></p>
     </div>
 
+    <!-- ADD SENTENCE CARD -->
     <div class="card">
       <h2>Add sentence</h2>
       <textarea id="englishText" placeholder="English sentence"></textarea>
@@ -33,11 +48,12 @@
       <p id="saveMessage"></p>
     </div>
 
+    <!-- SENTENCES LIST CARD -->
     <div class="card">
       <h2>Sentences</h2>
-      <input type="text" id="searchInput" placeholder="Search..." />
       <div id="sentenceList"></div>
     </div>
+
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
