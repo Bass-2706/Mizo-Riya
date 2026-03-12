@@ -247,3 +247,59 @@ searchToggle.addEventListener("click", () => {
     renderSentences(allSentences);
   }
 });
+
+
+// SUGGESTIONS DROPDOWN
+const suggestionsBox = document.getElementById("suggestionsBox");
+
+function showSuggestions(query) {
+  if (!query || query.length < 1) {
+    suggestionsBox.classList.remove("visible");
+    suggestionsBox.innerHTML = "";
+    return;
+  }
+
+  const q = query.toLowerCase();
+  const matches = allSentences.filter(item =>
+    item.english_text.toLowerCase().includes(q) ||
+    item.mizo_text.toLowerCase().includes(q)
+  ).slice(0, 6);
+
+  if (matches.length === 0) {
+    suggestionsBox.classList.remove("visible");
+    suggestionsBox.innerHTML = "";
+    return;
+  }
+
+  suggestionsBox.innerHTML = matches.map(item => `
+    <div class="suggestion-item" onclick="pickSuggestion('${item.id}')">
+      <div class="suggestion-english">${escapeHtml(item.english_text)}</div>
+      <div class="suggestion-mizo">${escapeHtml(item.mizo_text)}</div>
+    </div>
+  `).join("");
+
+  suggestionsBox.classList.add("visible");
+}
+
+function pickSuggestion(id) {
+  const item = allSentences.find(s => s.id === id);
+  if (!item) return;
+  searchInput.value = item.english_text;
+  suggestionsBox.classList.remove("visible");
+  suggestionsBox.innerHTML = "";
+  renderSentences(allSentences);
+}
+
+searchInput.addEventListener("input", () => {
+  showSuggestions(searchInput.value.trim());
+  renderSentences(allSentences);
+});
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".search-bar-wrapper")) {
+    suggestionsBox.classList.remove("visible");
+    suggestionsBox.innerHTML = "";
+  }
+});
+
+window.pickSuggestion = pickSuggestion;
