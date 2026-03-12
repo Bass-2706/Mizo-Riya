@@ -27,12 +27,14 @@ h1, h2 {
 }
 
 .card {
-  background: #111827;
-  border: 1px solid #334155;
+  background: rgba(17, 24, 39, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.25);
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 20px;
+  backdrop-filter: blur(6px);
 }
+
 
 input, textarea {
   width: 100%;
